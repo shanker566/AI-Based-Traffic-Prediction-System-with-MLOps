@@ -2,355 +2,349 @@
 
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.x-FF6F00.svg?logo=tensorflow&logoColor=white)](https://www.tensorflow.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.30+-FF4B4B.svg?logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![MLflow](https://img.shields.io/badge/MLflow-Tracking-0194E2.svg?logo=mlflow&logoColor=white)](https://mlflow.org/)
 [![DVC](https://img.shields.io/badge/DVC-Data_Versioning-945DD6.svg?logo=dvc&logoColor=white)](https://dvc.org/)
-[![Status](https://img.shields.io/badge/Status-Phase_1_Complete-success.svg)]()
+[![Evidently AI](https://img.shields.io/badge/Evidently_AI-Drift_Monitoring-purple.svg)](https://evidentlyai.com/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
+[![Tests](https://img.shields.io/badge/Tests-15%20Passed-brightgreen.svg)]()
 
-A robust, reproducible, end-to-end Machine Learning Operations (MLOps) pipeline for hourly traffic volume forecasting using Deep Learning (LSTM networks), MLflow experiment tracking, and DVC data versioning.
+A production-ready, reproducible Machine Learning Operations (MLOps) system for hourly traffic volume forecasting across multi-junction road networks. Built with Deep LSTM networks, FastAPI model serving, a Streamlit interactive dashboard, MLflow experiment tracking, DVC pipeline versioning, Evidently AI drift monitoring, and a safe candidate-model retraining workflow.
 
 ---
 
 ## 📌 Project Overview
 
-Urban traffic congestion results in significant fuel wastage, transit delays, and increased emissions. Accurate short-term traffic volume forecasting allows intelligent transportation systems and municipal authorities to optimize traffic signal timings, manage lane allocations, and route traffic efficiently.
+Urban vehicular congestion leads to severe delays, elevated emissions, and fuel wastage. Accurate short-term traffic volume forecasting enables municipal traffic management authorities and intelligent transportation systems (ITS) to dynamically optimize signal timings and divert traffic proactively.
 
-This project implements **Phase 1 (Basic Working Core)** of the Traffic Prediction MLOps lifecycle:
-1. **Exploratory Data Analysis (EDA)** with temporal pattern discovery.
-2. **Reproducible Data Preprocessing & Feature Engineering** with chronological train/val/test splitting.
-3. **Deep Learning (LSTM)** sequence model trained with TensorFlow/Keras.
-4. **Experiment Tracking & Artifact Management** with **MLflow**.
-5. **Data & Pipeline Versioning** with **DVC (Data Version Control)**.
-
----
-
-## 🎯 Problem Statement & Objectives
-
-### Problem Statement
-Traffic flow exhibits strong non-linearities, daily diurnal cycles (morning and evening rush hours), and weekly periodicity. Traditional static models struggle to capture sequential time-lagged dependencies. A recurrent neural network architecture like **LSTM (Long Short-Term Memory)** is required to capture sequential memory across historical time steps.
-
-### Phase 1 Objectives
-- Ingest and version historical traffic time-series data without data leakage.
-- Perform chronological sliding-window sequencing with a configurable lookback window ($T=24$ hours).
-- Train an LSTM architecture with Adam optimizer and EarlyStopping.
-- Evaluate the model rigorously on unseen test sequences using MAE, MSE, RMSE, and $R^2$.
-- Track all experiments, hyperparameters, metrics, and models using **MLflow**.
-- Build a reproducible 3-stage **DVC** pipeline (`prepare` $\rightarrow$ `train` $\rightarrow$ `evaluate`).
+### Key Capabilities (Phase 1 & Phase 2 Complete)
+1. **Time-Series Deep Learning**: 2-layer Long Short-Term Memory (LSTM) network with Dropout and Dense output.
+2. **Strict Chronological Sequencing**: 24-step sliding window ($T=24$ hours lookback) with zero future data leakage.
+3. **RESTful Model Serving**: High-performance **FastAPI** service with `/health`, `/model-info`, `/predict`, and `/junctions` endpoints.
+4. **Interactive Dashboard**: Modern **Streamlit** UI supporting historical evaluation, multi-step future forecasting, and session tracking.
+5. **Experiment Tracking**: **MLflow** recording parameters, epoch loss curves, evaluation metrics, and model artifacts.
+6. **Data & Pipeline Versioning**: **DVC** tracking raw data and reproducible DAG pipeline stages (`prepare` $\rightarrow$ `train` $\rightarrow$ `evaluate` $\rightarrow$ `monitor`).
+7. **Production Data Drift Monitoring**: **Evidently AI** comparing reference training distributions with incoming test horizons and tracking model performance drift.
+8. **Safe Candidate Retraining**: Controlled retraining workflow comparing candidate RMSE/$R^2$ against production baseline with automatic promotion gates and backups.
+9. **Automated Unit & Integration Testing**: Comprehensive **pytest** suite validating schemas, endpoints, and transforms.
 
 ---
 
-## 📊 Dataset Information
-
-- **Dataset Name**: Traffic Prediction Dataset / Metro Traffic Volume Time Series
-- **Kaggle Source**: [https://www.kaggle.com/datasets/fedesoriano/traffic-prediction-dataset](https://www.kaggle.com/datasets/fedesoriano/traffic-prediction-dataset)
-- **Total Records**: `48,120` rows $\times$ `4` columns
-- **Time Range**: `2015-11-01 00:00:00` to `2017-06-30 23:00:00` (Hourly readings)
-- **Missing Values**: `0` (clean dataset)
-- **Target Column**: `Vehicles` (hourly traffic volume)
-
-### Features Overview
-| Column | Type | Description |
-| :--- | :--- | :--- |
-| `DateTime` | Timestamp | Hourly observation datetime (`YYYY-MM-DD HH:MM:SS`) |
-| `Junction` | Integer (1–4) | Identifier of traffic junction monitored |
-| `Vehicles` | Integer (1–180) | **Target Variable**: Number of vehicles observed |
-| `ID` | Integer | Unique observation identifier |
-
-### Engineered Features
-- `Hour` (0 to 23): Captures diurnal rush hour peaks.
-- `DayOfWeek` (0 to 6): Captures weekly cycles (Monday through Sunday).
-- `Day` (1 to 31): Day of month.
-- `Month` (1 to 12): Monthly / seasonal trends.
-- `IsWeekend` (0/1): Binary indicator for Saturday/Sunday.
-
----
-
-## 🏗️ Project Architecture & Pipeline
+## 🏗️ System Architecture
 
 ```mermaid
 flowchart TD
-    A["Raw Traffic Dataset (data/raw/traffic.csv)"] -->|DVC Tracked| B["Stage 1: Prepare (src/data_preprocessing.py)"]
-    B -->|Feature Engineering & Chronological Split| C["Processed Data (data/processed/traffic_sequences.npz)"]
-    B -->|MinMax Scalers| S["models/*_scaler.pkl"]
-    C --> D["Stage 2: Train (src/train_lstm.py)"]
-    D -->|TensorFlow LSTM Training| E["Trained Model (models/traffic_lstm.keras)"]
-    D -->|Log Params & Weights| M["MLflow Tracking (traffic-prediction-lstm)"]
-    E --> F["Stage 3: Evaluate (src/evaluate.py)"]
-    S --> F
-    C --> F
-    F -->|Metrics: MAE, RMSE, R²| M
-    F -->|Figure: actual_vs_predicted.png| R["reports/figures/"]
+    subgraph Data & Pipeline Versioning [DVC & Storage]
+        Raw["Raw Data (data/raw/traffic.csv)"] -->|DVC Tracking| Prep["Stage 1: Prepare (src/data_preprocessing.py)"]
+        Prep --> Processed["Processed Sequences (data/processed/traffic_sequences.npz)"]
+        Prep --> Scalers["MinMax Scalers (models/*_scaler.pkl)"]
+        Processed --> Train["Stage 2: Train (src/train_lstm.py)"]
+        Train --> Model["Production Model (models/traffic_lstm.keras)"]
+        Model --> Eval["Stage 3: Evaluate (src/evaluate.py)"]
+        Eval --> Figures["Reports & Figures (reports/figures/)"]
+        Model --> Monitor["Stage 4: Monitor (monitoring/drift_report.py)"]
+    end
+
+    subgraph Experiment Tracking [MLflow Tracking Server]
+        Train -.->|Log Params, Metrics, Weights| MLflow["MLflow UI (traffic-prediction-lstm)"]
+        Eval -.->|Log Test Metrics & Plots| MLflow
+        Retrain["Retraining Pipeline (src/retrain.py)"] -.->|Candidate Comparison & Audit| MLflow
+    end
+
+    subgraph Model Serving & Consumption [Deployment Layer]
+        Model --> API["FastAPI Service (api/main.py :8000)"]
+        Scalers --> API
+        API --> Dashboard["Streamlit Dashboard (dashboard/app.py :8501)"]
+        API --> Swagger["Interactive Swagger UI (/docs)"]
+    end
+
+    subgraph Monitoring & Governance [Evidently AI]
+        Processed --> Monitor
+        Monitor --> DriftReport["Drift HTML & Summary JSON (reports/)"]
+    end
 ```
 
 ---
 
-## 🧠 LSTM Neural Network Architecture
+## 📊 Dataset & Feature Engineering
 
-The model uses a stacked Long Short-Term Memory (LSTM) network designed for temporal sequence forecasting:
+- **Dataset**: Traffic Prediction Dataset (Hourly Vehicle Counts Across 4 Junctions)
+- **Kaggle Source**: [https://www.kaggle.com/datasets/fedesoriano/traffic-prediction-dataset](https://www.kaggle.com/datasets/fedesoriano/traffic-prediction-dataset)
+- **Observations**: `48,120` rows $\times$ `4` raw columns
+- **Timestamp Coverage**: `2015-11-01 00:00:00` to `2017-06-30 23:00:00`
+- **Target Variable**: `Vehicles` (hourly count)
 
-```
+### Input Feature Matrix ($T=24$ Steps $\times 6$ Features)
+| Feature Name | Type | Description |
+| :--- | :--- | :--- |
+| **`Vehicles`** | Float | Scaled vehicle count from preceding observation |
+| **`Hour`** | Integer ($0$–$23$) | Diurnal cycle (morning/evening rush hour identifier) |
+| **`DayOfWeek`** | Integer ($0$–$6$) | Day of week ($0 = \text{Monday}, \dots, 6 = \text{Sunday}$) |
+| **`Month`** | Integer ($1$–$12$) | Seasonal calendar month |
+| **`IsWeekend`** | Binary ($0/1$) | Weekend traffic shift indicator |
+| **`Junction`** | Integer ($1$–$4$) | Specific junction identifier |
+
+### Chronological Holdout Split (Strictly No Random Shuffling)
+- **Training Set (70.0%)**: `33,684` samples (`2015-11-01 00:00:00` to `2017-01-31 14:00:00`)
+- **Validation Set (15.0%)**: `7,218` samples (`2017-01-31 15:00:00` to `2017-04-16 19:00:00`)
+- **Testing Set (15.0%)**: `7,218` samples (`2017-04-16 19:00:00` to `2017-06-30 23:00:00`)
+
+---
+
+## 🧠 LSTM Neural Network Specification
+
+```text
 Input Layer (Shape: [Batch Size, 24 Steps, 6 Features])
        │
        ▼
-LSTM Layer 1 (64 Units, return_sequences=True)
+LSTM Layer 1 (64 Units, return_sequences=True, name="lstm_layer_1")
        │
        ▼
-Dropout Layer (Rate = 0.20)
+Dropout Layer (Rate = 0.20, name="dropout_1")
        │
        ▼
-LSTM Layer 2 (32 Units, return_sequences=False)
+LSTM Layer 2 (32 Units, return_sequences=False, name="lstm_layer_2")
        │
        ▼
-Dense Layer (16 Units, ReLU activation)
+Dense Intermediate (16 Units, Activation="relu", name="dense_intermediate")
        │
        ▼
-Dense Output Layer (1 Unit, Linear activation -> Predicted Traffic Volume)
+Dense Output Layer (1 Unit, Activation="linear", name="traffic_prediction_output")
 ```
 
-- **Loss Function**: Mean Squared Error (MSE)
-- **Optimizer**: Adam ($\text{learning\_rate} = 0.001$)
-- **Lookback Horizon**: $24$ time steps (uses the previous 24 hours of traffic & temporal features to predict the 25th hour)
-- **Regularization**: Dropout ($p=0.2$) + EarlyStopping monitoring validation loss (patience=5)
+### Baseline Performance Metrics (Phase 1 Verified Holdout Test Set)
+- **Mean Absolute Error (MAE)**: **`6.14` vehicles** (on average, predictions deviate by ~6 vehicles/hr)
+- **Root Mean Squared Error (RMSE)**: **`8.22` vehicles**
+- **Mean Squared Error (MSE)**: **`67.49`**
+- **Coefficient of Determination ($R^2$)**: **`0.9137` (91.4% variance explained)**
 
 ---
 
-## 📈 Experimental Results & Metrics
+## ⚡ Quickstart & Installation
 
-All metrics are evaluated on the **strictly unseen chronological test set** ($N = 7,194$ sequences, April 2017 to June 2017):
-
-| Metric | Measured Value | Interpretation |
-| :--- | :--- | :--- |
-| **Mean Absolute Error (MAE)** | **6.14 vehicles** | On average, predictions deviate by ~6 vehicles per hour |
-| **Root Mean Squared Error (RMSE)** | **8.22 vehicles** | Low penalty on larger peak errors |
-| **Mean Squared Error (MSE)** | **67.49** | Squared residual error |
-| **Coefficient of Determination ($R^2$)** | **0.9137 (91.37%)** | The LSTM captures **91.4%** of traffic variance |
-
-### Sample Actual vs. Predicted Predictions (Test Set)
-| Step Index | Actual Vehicles | Predicted Vehicles | Residual (Pred - Actual) |
-| :---: | :---: | :---: | :---: |
-| 0 | 12.00 | 13.80 | +1.80 |
-| 1 | 6.00 | 6.89 | +0.89 |
-| 2 | 35.00 | 47.53 | +12.53 |
-| 3 | 15.00 | 13.11 | -1.89 |
-| 4 | 7.00 | 10.08 | +3.08 |
-| 5 | 7.00 | 4.61 | -2.39 |
-| 6 | 34.00 | 35.72 | +1.72 |
-| 7 | 14.00 | 11.29 | -2.71 |
-| 8 | 9.00 | 7.80 | -1.20 |
-| 9 | 4.00 | 3.46 | -0.54 |
-
----
-
-## 📁 Project Directory Structure
-
-```text
-AI-Traffic-Prediction-MLOps/
-├── data/
-│   ├── raw/
-│   │   ├── traffic.csv               # Raw dataset (tracked with DVC)
-│   │   ├── traffic.csv.dvc           # DVC pointer file
-│   │   └── .gitignore
-│   └── processed/
-│       ├── processed_traffic.csv     # Cleaned dataframe with engineered features
-│       └── traffic_sequences.npz     # Preprocessed 24-step sequence arrays
-│
-├── notebooks/
-│   └── traffic_eda.ipynb             # Interactive Exploratory Data Analysis notebook
-│
-├── src/
-│   ├── inspect_data.py               # Dataset summary and schema validator
-│   ├── generate_eda.py               # EDA script saving figures to reports/figures
-│   ├── data_preprocessing.py         # Feature engineering, scaling & sliding window
-│   ├── train_lstm.py                 # LSTM model training with MLflow tracking
-│   └── evaluate.py                   # Metric calculation & actual vs predicted plot
-│
-├── models/
-│   ├── traffic_lstm.keras            # Trained Keras LSTM model
-│   ├── feature_scaler.pkl            # Fitted MinMaxScaler for input features
-│   └── target_scaler.pkl             # Fitted MinMaxScaler for vehicle target
-│
-├── mlruns/                           # MLflow experiment runs and artifact storage
-│
-├── reports/
-│   └── figures/
-│       ├── traffic_over_time.png     # Trend analysis over 2015-2017
-│       ├── traffic_by_hour.png       # Diurnal hourly rush hour profile
-│       ├── traffic_by_day_of_week.png# Weekday vs Weekend traffic patterns
-│       ├── traffic_by_junction.png   # Traffic volume comparison across 4 junctions
-│       └── actual_vs_predicted.png   # 168-hour actual vs predicted test comparison
-│
-├── requirements.txt                  # Required Python dependencies
-├── README.md                         # Complete project documentation and viva guide
-├── .gitignore                        # Git ignore configuration
-├── dvc.yaml                          # Reproducible DVC pipeline definition
-└── dvc.lock                          # DVC pipeline state and hash lockfile
-```
-
----
-
-## ⚙️ Installation & Setup
-
-### 1. Clone or Open Project Directory
+### 1. Environment Setup
 ```powershell
+# Clone or navigate to the project directory
 cd "c:\Users\gowri\OneDrive\Desktop\mlops project"
-```
 
-### 2. Create and Activate Virtual Environment
-```powershell
-py -3.11 -m venv .venv
+# Activate Python 3.11 virtual environment
 .\.venv\Scripts\Activate.ps1
-```
 
-### 3. Install Dependencies
-```powershell
+# Install project dependencies
 pip install -r requirements.txt
 ```
 
-### 4. Setup Raw Dataset
-Place the raw dataset in `data/raw/traffic.csv` (or extract `archive.zip`).
+### 2. Configure Environment Variables
+Copy the template configuration file:
+```powershell
+Copy-Item .env.example .env
+```
 
 ---
 
-## 🚀 Running the Project
+## 🚀 Running the Services
 
-### Option A: Run End-to-End via DVC (Recommended)
-DVC ensures all dependencies and stages execute in order:
+### A. Run the FastAPI Model-Serving Service
+```powershell
+# Start FastAPI on port 8000
+python -m uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
+```
+- **API Base**: [http://127.0.0.1:8000](http://127.0.0.1:8000)
+- **Interactive Swagger Documentation**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- **ReDoc Schema**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+
+#### Key Endpoints & Examples:
+1. **Health Check (`GET /health`)**
+   ```bash
+   curl http://127.0.0.1:8000/health
+   ```
+   *Response*:
+   ```json
+   {
+     "status": "healthy",
+     "model_loaded": true,
+     "feature_scaler_loaded": true,
+     "target_scaler_loaded": true,
+     "dataset_records": 48120,
+     "model_version": "traffic_lstm_v1"
+   }
+   ```
+
+2. **Model Metadata (`GET /model-info`)**
+   ```bash
+   curl http://127.0.0.1:8000/model-info
+   ```
+
+3. **Historical Evaluation Prediction (`POST /predict`)**
+   ```bash
+   curl -X POST http://127.0.0.1:8000/predict \
+     -H "Content-Type: application/json" \
+     -d "{\"target_timestamp\": \"2017-06-30 23:00:00\", \"junction\": 1, \"mode\": \"historical\"}"
+   ```
+   *Response*:
+   ```json
+   {
+     "target_timestamp": "2017-06-30 23:00:00",
+     "junction": 1,
+     "predicted_vehicles": 53.57,
+     "mode": "historical_evaluation",
+     "model_version": "traffic_lstm_v1",
+     "actual_vehicles": 78.0,
+     "residual_error": -24.43,
+     "sequence_start": "2017-06-29 23:00:00",
+     "sequence_end": "2017-06-30 22:00:00"
+   }
+   ```
+
+4. **Future Forecast (`POST /predict`)**
+   ```bash
+   curl -X POST http://127.0.0.1:8000/predict \
+     -H "Content-Type: application/json" \
+     -d "{\"target_timestamp\": \"2017-07-01 06:00:00\", \"junction\": 1, \"mode\": \"future\"}"
+   ```
+
+---
+
+### B. Run the Streamlit Interactive Dashboard
+In a new terminal (with `.venv` activated):
+```powershell
+streamlit run dashboard/app.py
+```
+- Opens automatically in your browser at: **[http://localhost:8501](http://localhost:8501)**
+- Connects directly to the FastAPI backend service via `API_BASE_URL`.
+- Features tabs for:
+  - **Live Prediction**: Interactive date/hour picker, junction selection, and actual vs. predicted metric badges.
+  - **Baseline Evaluation**: Verified holdout metrics ($R^2$, MAE, RMSE) and evaluation comparison charts.
+  - **Session History**: Log of all queries generated during the session with CSV export.
+  - **Model & Architecture**: Visual overview of network layers and input schemas.
+
+---
+
+### C. Run the MLflow Experiment Tracking UI
+```powershell
+python -m mlflow ui
+```
+- Open browser at: **[http://127.0.0.1:5000](http://127.0.0.1:5000)**
+- Inspect tracked hyperparameters, training loss curves, evaluation metrics, and logged model weights under experiment **`traffic-prediction-lstm`**.
+
+---
+
+### D. Run Evidently AI Data Drift & Performance Monitoring
+```powershell
+python monitoring/drift_report.py
+```
+- Generates an interactive visual report at: [reports/evidently_drift_report.html](file:///c:/Users/gowri/OneDrive/Desktop/mlops%20project/reports/evidently_drift_report.html)
+- Generates JSON summary metadata at: [reports/drift_summary.json](file:///c:/Users/gowri/OneDrive/Desktop/mlops%20project/reports/drift_summary.json)
+- Evaluates statistical distribution shifts between the 70% training reference partition and the 15% holdout test partition.
+
+---
+
+### E. Execute Safe Model Retraining & Promotion Workflow
+```powershell
+python src/retrain.py --epochs 20 --batch-size 64 --tolerance 0.05
+```
+- **Safety Workflow**:
+  1. Measures current production baseline performance on the test set.
+  2. Trains a candidate model saved to `models/candidate_traffic_lstm.keras`.
+  3. Runs inference sanity smoke tests on candidate weights.
+  4. Tests promotion criteria: candidate RMSE must match or improve baseline within tolerance ($\le 5\%$) and $R^2 \ge 0.85$.
+  5. If approved: creates backup `models/traffic_lstm_backup.keras` and promotes candidate to `models/traffic_lstm.keras`.
+  6. If rejected: preserves production model and logs audit failure to MLflow.
+
+---
+
+### F. Run the Reproducible DVC Pipeline
+To reproduce the full 4-stage pipeline:
 ```powershell
 dvc repro
 ```
-To inspect DVC pipeline status:
+To check pipeline stage status:
 ```powershell
 dvc status
 ```
 
-### 🛠️ Option B: Run Individual Scripts Step-by-Step Individually
+---
 
-> **Note:** First ensure your virtual environment is activated in PowerShell:
-> ```powershell
-> .\.venv\Scripts\Activate.ps1
-> ```
-> *(You will see `(.venv)` appear at the beginning of your prompt).*
+## 🐳 Docker & Containerized Deployment
 
-1. **Step 1 — Data Preprocessing & 24-Hour Sequence Creation:**
-   ```powershell
-   python src/data_preprocessing.py
-   ```
-   *Output:* Cleans raw data, extracts time features, creates chronological 70/15/15 splits, scales features, and saves sequence files.
+Docker configurations are provided to run the entire stack as containerized microservices:
 
-2. **Step 2 — Train the LSTM Model (with MLflow Tracking):**
-   ```powershell
-   python src/train_lstm.py --epochs 25 --batch_size 64
-   ```
-   *Output:* Trains the 2-layer LSTM network with EarlyStopping, saves `models/traffic_lstm.keras`, and logs parameters to MLflow.
+- **`Dockerfile`**: Builds the FastAPI inference service (`python:3.11-slim`, port 8000, with curl healthchecks).
+- **`Dockerfile.dashboard`**: Builds the Streamlit UI dashboard (`python:3.11-slim`, port 8501).
+- **`docker-compose.yml`**: Orchestrates both containers with internal networking (`API_BASE_URL=http://api:8000`) and volume mounts.
 
-3. **Step 3 — Evaluate the Model on Unseen Test Data:**
-   ```powershell
-   python src/evaluate.py
-   ```
-   *Output:* Computes MAE (6.14), RMSE (8.22), $R^2$ (0.9137), prints actual vs. predicted table, and saves the comparison chart to `reports/figures/actual_vs_predicted.png`.
-
-4. **Optional — Generate EDA Figures:**
-   ```powershell
-   python src/generate_eda.py
-   ```
-   *Output:* Generates hourly, daily, and junction traffic distribution plots inside `reports/figures/`.
+### Running with Docker Compose:
+```bash
+docker compose up --build
+```
+> **Environment Note**: On machines without Docker Desktop or Docker engine installed, running `docker` commands in local PowerShell will indicate command not recognized. In such environments, run the services natively using the virtual environment commands documented in Section 6.
 
 ---
 
-## 🔬 MLflow Experiment Tracking
+## 🧪 Automated Testing Suite
 
-### How to Start MLflow UI:
+Run the full pytest suite:
+```powershell
+python -m pytest -v
+```
 
-1. Open **PowerShell** in the project directory:
-   ```powershell
-   cd "c:\Users\gowri\OneDrive\Desktop\mlops project"
-   ```
-2. Activate your virtual environment:
-   ```powershell
-   .\.venv\Scripts\Activate.ps1
-   ```
-3. Run the MLflow UI server command:
-   ```powershell
-   python -m mlflow ui
-   ```
-   *(or `mlflow ui`)*
-
-4. You will see the server output:
-   ```text
-   [INFO] Listening at: http://127.0.0.1:5000
-   ```
-5. Open your browser and navigate to: **[http://127.0.0.1:5000](http://127.0.0.1:5000)**.
-
----
-
-### Navigating the MLflow Dashboard (For Review / Viva):
-
-1. On the left sidebar, click on the experiment **`traffic-prediction-lstm`**.
-2. Click on any recorded run (e.g. `lstm_traffic_run` or `lstm_test_evaluation`) to view:
-   - **Hyperparameters**: `sequence_length` (24), `lstm_units_1` (64), `lstm_units_2` (32), `dropout_rate` (0.2), `dense_units` (16), `batch_size` (64), `learning_rate` (0.001), `optimizer` (Adam).
-   - **Metrics**: `test_mae` (~5.88–6.14), `test_rmse` (~7.85–8.22), `test_r2` (~0.9137–0.9211), `train_loss_mse`, `val_loss_mse`.
-   - **Artifacts**: Download or inspect the saved model weights (`traffic_lstm_model`) and the evaluation comparison plot (`actual_vs_predicted.png`).
+### Verified Test Results (15/15 Passed):
+- `tests/test_api.py::test_health_endpoint`: **PASSED** (verifies status and model artifact loading)
+- `tests/test_api.py::test_model_info_endpoint`: **PASSED** (verifies schema, features, baseline metrics)
+- `tests/test_api.py::test_predict_historical_valid`: **PASSED** (verifies historical inference and error calculation)
+- `tests/test_api.py::test_predict_future_valid`: **PASSED** (verifies multi-step recursive forecasting)
+- `tests/test_api.py::test_predict_custom_sequence_valid`: **PASSED** (verifies custom 24-step sequence input)
+- `tests/test_api.py::test_predict_invalid_junction`: **PASSED** (verifies rejection of invalid junction ID)
+- `tests/test_api.py::test_predict_invalid_sequence_length`: **PASSED** (verifies rejection of incomplete sequences)
+- `tests/test_api.py::test_predict_invalid_timestamp_format`: **PASSED** (verifies rejection of malformed dates)
+- `tests/test_monitoring.py::test_drift_report_generation`: **PASSED** (verifies HTML & JSON drift reports)
+- `tests/test_preprocessing.py::test_feature_engineering_columns`: **PASSED** (verifies temporal feature extraction)
+- `tests/test_preprocessing.py::test_sliding_window_sequence_shape`: **PASSED** (verifies `[N-24, 24, 6]` shapes)
+- `tests/test_preprocessing.py::test_scaler_files_consistency`: **PASSED** (verifies feature and target scaler shapes)
+- `tests/test_retrain.py::test_promotion_rule_approval`: **PASSED** (verifies approval when candidate matches baseline)
+- `tests/test_retrain.py::test_promotion_rule_rejection_high_rmse`: **PASSED** (verifies rejection on degraded candidate RMSE)
+- `tests/test_retrain.py::test_promotion_rule_rejection_low_r2`: **PASSED** (verifies rejection on low candidate R²)
 
 ---
 
-## 📦 DVC Data & Pipeline Versioning
+## ⚠️ Important Model Limitations & Assumptions
 
-- **Track Data**:
-  ```powershell
-  dvc add data/raw/traffic.csv
-  ```
-- **Pipeline Definition (`dvc.yaml`)**:
-  - Stage `prepare`: `data/raw/traffic.csv` $\rightarrow$ `data/processed/traffic_sequences.npz`
-  - Stage `train`: `data/processed/traffic_sequences.npz` $\rightarrow$ `models/traffic_lstm.keras`
-  - Stage `evaluate`: `models/traffic_lstm.keras` $\rightarrow$ `reports/figures/actual_vs_predicted.png`
-- **Reproduce Pipeline**:
-  ```powershell
-  dvc repro
-  ```
+1. **Sequential Lookback Dependency**: The LSTM requires the preceding 24 continuous hourly observations ($T=24$) to predict the next time step. It cannot predict a timestamp in isolation without historical context.
+2. **Recursive Multi-Step Compounding Error**: In Mode 2 (Future Forecast), the model uses its own predictions as inputs for subsequent hours. Error compounding occurs beyond 24–48 hours; forecasts beyond 72 hours are deliberately blocked.
+3. **No Direct Weather Feeds**: The dataset records traffic counts and datetime across 4 junctions. It does not contain live weather or accident sensors; sudden unobserved events (e.g. road construction) cannot be inferred without dedicated external features.
+4. **Historical Evaluation vs. Real-Time Telemetry**: Predictions for historical test timestamps are verified against known ground-truth labels for evaluation purposes and do not represent live IoT sensor feeds.
 
 ---
 
-## 🎓 College Project Viva / Review Q&A Guide
+## 🎓 College Viva / Review Q&A Guide
 
-### Q1: What is the core problem being solved?
-> **Answer**: We are predicting future hourly traffic volume across road junctions using historical time-series data to assist in intelligent traffic flow management and congestion prevention.
+### Q1: What was added in Phase 2 compared to Phase 1?
+> **Answer**: Phase 1 implemented the core modeling pipeline (dataset inspection, EDA, preprocessing, LSTM training, evaluation, initial MLflow, and DVC). Phase 2 turned this model into an operational MLOps system by adding: (1) a FastAPI model-serving API, (2) an interactive Streamlit dashboard, (3) Docker and Docker Compose definitions, (4) Evidently AI data drift and performance monitoring, (5) a safe candidate retraining and promotion workflow, and (6) a 15-test pytest verification suite.
 
-### Q2: What dataset is used and why?
-> **Answer**: The Kaggle Traffic Prediction dataset containing 48,120 hourly vehicle count observations across 4 junctions from November 2015 to June 2017.
+### Q2: How does the FastAPI service prevent data leakage during historical evaluation?
+> **Answer**: When an examiner asks for traffic at `2017-06-30 23:00`, the API strictly queries observations where `DateTime < 2017-06-30 23:00` and takes the last 24 records. The target hour is never passed into the feature matrix, ensuring true holdout evaluation.
 
-### Q3: Why choose LSTM over standard regression or feedforward networks?
-> **Answer**: Standard feedforward networks assume observations are independent and identically distributed ($i.i.d.$). Traffic data contains strong **temporal autocorrelation**, time-lags, and diurnal rush-hour cycles. LSTM has internal memory cells and gating mechanisms (input, forget, output gates) that retain long-term and short-term dependencies across time steps.
+### Q3: Why is candidate model promotion gated in the retraining workflow?
+> **Answer**: Retraining on fresh or drifted data does not guarantee a superior model; overfitting or noisy batches can degrade performance. The retraining pipeline (`src/retrain.py`) validates candidate models against smoke tests and baseline metrics ($R^2 \ge 0.85$, $\text{RMSE} \le \text{baseline} \times 1.05$). If a candidate fails, the current production model is kept untouched.
 
-### Q4: Why is random shuffling forbidden in time-series data splitting?
-> **Answer**: Random shuffling causes **data leakage** (look-ahead bias) where future time steps leak information into past training sequences. We strictly applied a **chronological split**: first 70% for training (Nov 2015 - Jan 2017), middle 15% for validation (Feb 2017 - Apr 2017), and final 15% for testing (Apr 2017 - Jun 2017).
-
-### Q5: What is DVC and why is it used?
-> **Answer**: Git is not designed to version large dataset binaries. DVC (Data Version Control) versions data alongside code using lightweight pointer files (`.dvc`) and establishes a reproducible dependency DAG pipeline (`dvc.yaml` and `dvc.lock`).
-
-### Q6: What is MLflow and why is it used?
-> **Answer**: MLflow provides an MLOps platform for experiment tracking, parameter comparison, metric visualization, and model artifact logging across iterations.
-
-### Q7: What metrics were used to evaluate model performance?
-> **Answer**:
-> - **MAE (6.14 vehicles)**: Average magnitude of absolute error.
-> - **RMSE (8.22 vehicles)**: Penalizes large outliers.
-> - **$R^2$ Score (0.9137)**: Explains 91.4% of the total variance in test traffic volume.
+### Q4: What does Evidently AI monitor in this project?
+> **Answer**: Evidently monitors covariate drift across the 6 features by comparing the 70% training reference distribution with incoming test batches using statistical tests (Kolmogorov-Smirnov test and Wasserstein distance). When ground-truth labels become available, it also computes MAE and RMSE drift over time.
 
 ---
 
-## 📋 Implementation Status & Roadmap
+## 📋 Project Status Summary
 
-### ✅ CURRENTLY IMPLEMENTED (Phase 1 / Review-1):
-- [x] Kaggle Traffic time-series dataset ingestion and inspection
-- [x] Exploratory Data Analysis notebook (`notebooks/traffic_eda.ipynb`) and report figures
+### ✅ Fully Implemented & Tested:
+- [x] Kaggle Traffic time-series dataset ingestion & EDA
 - [x] Chronological train/val/test data preprocessing & 24-step sliding window sequencing
-- [x] LSTM Neural Network with TensorFlow/Keras & EarlyStopping
+- [x] Stacked LSTM Neural Network with TensorFlow/Keras & EarlyStopping
 - [x] Model evaluation with MAE, MSE, RMSE, $R^2$ and comparison visualization
-- [x] MLflow experiment tracking (params, metrics, artifacts)
-- [x] DVC dataset versioning and reproducible 3-stage pipeline (`dvc.yaml`)
-
-### 🔮 FUTURE WORK (Phase 2 / Review-2):
-- [ ] **FastAPI**: REST API for real-time inference endpoints.
-- [ ] **Streamlit**: Interactive user dashboard for traffic volume visualization.
-- [ ] **Docker**: Containerization for reproducible microservice deployment.
-- [ ] **Evidently AI**: Data drift and model performance degradation monitoring.
-- [ ] **Automated CI/CD & Retraining**: Scheduled model retraining pipeline.
+- [x] MLflow experiment tracking (params, metrics, model artifacts)
+- [x] DVC dataset versioning and reproducible 4-stage pipeline (`dvc.yaml`)
+- [x] FastAPI model-serving service with OpenAPI Swagger UI (`api/main.py`)
+- [x] Streamlit interactive traffic prediction dashboard (`dashboard/app.py`)
+- [x] Dockerfile, Dockerfile.dashboard, and docker-compose.yml
+- [x] Evidently AI data drift and model performance monitoring (`monitoring/drift_report.py`)
+- [x] Safe manual retraining workflow with baseline comparison and candidate promotion (`src/retrain.py`)
+- [x] Automated pytest suite with 15 passing test cases (`tests/`)

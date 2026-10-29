@@ -27,3 +27,13 @@ stages:
       - src/evaluate.py
     outs:
       - reports/figures/actual_vs_predicted.png
+
+  monitor:
+    cmd: python monitoring/drift_report.py
+    deps:
+      - data/processed/processed_traffic.csv
+      - models/traffic_lstm.keras
+      - monitoring/drift_report.py
+    outs:
+      - reports/evidently_drift_report.html
+      - reports/drift_summary.json
