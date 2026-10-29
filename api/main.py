@@ -162,9 +162,23 @@ class PredictRequest(BaseModel):
 
     @field_validator("custom_sequence")
     @classmethod
-    def validate_sequence_length(cls, value):
-        if value is not None and len(value) != SEQUENCE_LENGTH:
-            raise ValueError(f"Custom sequence must contain exactly {SEQUENCE_LENGTH} observations. Received {len(value)}.")
+    def validate_custom_sequence(cls, value):
+        if value is not None:
+            if len(value) != SEQUENCE_LENGTH:
+                raise ValueError(f"Custom sequence must contain exactly {SEQUENCE_LENGTH} observations. Received {len(value)}.")
+            for i, step in enumerate(value):
+                if isinstance(step, (int, float)):
+                    if np.isnan(step) or np.isinf(step):
+                        raise ValueError(f"Observation at index {i} must be a finite number.")
+                    if step < 0:
+                        raise ValueError(f"Negative vehicle count ({step}) at sequence index {i} is invalid.")
+                elif isinstance(step, dict):
+                    v = step.get('vehicles')
+                    if v is not None:
+                        if np.isnan(v) or np.isinf(v):
+                            raise ValueError(f"Vehicle count at sequence index {i} must be a finite number.")
+                        if v < 0:
+                            raise ValueError(f"Negative vehicle count ({v}) at sequence index {i} is invalid.")
         return value
 
 class PredictResponse(BaseModel):

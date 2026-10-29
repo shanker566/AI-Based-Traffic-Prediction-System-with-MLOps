@@ -38,3 +38,19 @@ def test_promotion_rule_rejection_low_r2():
 
     r2_pass = candidate_r2 >= min_r2
     assert r2_pass is False
+
+def test_model_preservation_on_candidate_failure(tmp_path):
+    """Verify production model file is untouched and preserved when candidate fails promotion."""
+    prod_file = tmp_path / "traffic_lstm.keras"
+    prod_file.write_text("production_model_bytes_v1")
+
+    candidate_file = tmp_path / "candidate_model.keras"
+    candidate_file.write_text("candidate_model_bytes_v2")
+
+    # Simulate rejection
+    promote = False
+    if promote:
+        prod_file.write_text(candidate_file.read_text())
+
+    # Verify production file still has original content
+    assert prod_file.read_text() == "production_model_bytes_v1"

@@ -103,7 +103,7 @@ st.sidebar.markdown("### 🎓 Project Details")
 st.sidebar.caption(
     "**Course**: College MLOps Project (Phase 2)\n\n"
     "**Architecture**: Deep LSTM Network\n\n"
-    "**Stack**: FastAPI, Streamlit, Docker, MLflow, DVC, Evidently AI"
+    "**Stack**: FastAPI, Streamlit, MLflow, DVC, Evidently AI (Native Python)"
 )
 
 # -----------------------------------------------------------------------------

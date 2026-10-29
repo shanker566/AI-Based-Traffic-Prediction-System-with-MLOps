@@ -101,3 +101,41 @@ def test_predict_invalid_timestamp_format(client):
     }
     response = client.post("/predict", json=payload)
     assert response.status_code == 422
+
+def test_junctions_endpoint(client):
+    """Test GET /junctions returns stats for all monitored junctions."""
+    response = client.get("/junctions")
+    assert response.status_code == 200
+    data = response.json()
+    for junc_id in [1, 2, 3, 4]:
+        key = f"Junction_{junc_id}"
+        assert key in data
+        assert "records" in data[key]
+        assert data[key]["records"] > 0
+        assert "mean_hourly_vehicles" in data[key]
+
+def test_predict_negative_vehicle_count(client):
+    """Test rejecting negative vehicle counts in custom sequence."""
+    invalid_seq = [10.0] * 23 + [-5.0]
+    payload = {
+        "target_timestamp": "2026-10-30 12:00:00",
+        "junction": 1,
+        "mode": "custom_sequence",
+        "custom_sequence": invalid_seq
+    }
+    response = client.post("/predict", json=payload)
+    assert response.status_code == 422
+
+def test_predict_historical_no_future_leakage(client):
+    """Test that historical mode uses only observations strictly preceding target timestamp."""
+    payload = {
+        "target_timestamp": "2017-06-30 20:00:00",
+        "junction": 1,
+        "mode": "historical"
+    }
+    response = client.post("/predict", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["sequence_end"] < "2017-06-30 20:00:00"
+    assert data["sequence_end"] == "2017-06-30 19:00:00"
+    assert data["sequence_start"] == "2017-06-29 20:00:00"
