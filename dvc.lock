@@ -1,0 +1,70 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: python src/data_preprocessing.py
+    deps:
+    - path: data/raw/traffic.csv
+      hash: md5
+      md5: fd50c118f8142d90df7f7b9792429c28
+      size: 1767271
+    - path: src/data_preprocessing.py
+      hash: md5
+      md5: 74efd412e305badbb49cc66d47a62438
+      size: 6748
+    outs:
+    - path: data/processed/processed_traffic.csv
+      hash: md5
+      md5: 30ee3a31087d645d82a82bd28a29951c
+      size: 2369577
+    - path: data/processed/traffic_sequences.npz
+      hash: md5
+      md5: d246a5e90f9cf07b8e9afbbde526b4e6
+      size: 961337
+    - path: models/feature_scaler.pkl
+      hash: md5
+      md5: 1428c0ffc98f6437dad9f493a6850f5a
+      size: 1207
+    - path: models/target_scaler.pkl
+      hash: md5
+      md5: c6771986102db57dfeb7a93483d7e61d
+      size: 975
+  train:
+    cmd: python src/train_lstm.py
+    deps:
+    - path: data/processed/traffic_sequences.npz
+      hash: md5
+      md5: d246a5e90f9cf07b8e9afbbde526b4e6
+      size: 961337
+    - path: src/train_lstm.py
+      hash: md5
+      md5: 3363ee7ee3ea87523857c42315b0783a
+      size: 6151
+    outs:
+    - path: models/traffic_lstm.keras
+      hash: md5
+      md5: 07af4dd27b19a5cf8d4af407206e0fd0
+      size: 413589
+  evaluate:
+    cmd: python src/evaluate.py
+    deps:
+    - path: data/processed/traffic_sequences.npz
+      hash: md5
+      md5: d246a5e90f9cf07b8e9afbbde526b4e6
+      size: 961337
+    - path: models/target_scaler.pkl
+      hash: md5
+      md5: c6771986102db57dfeb7a93483d7e61d
+      size: 975
+    - path: models/traffic_lstm.keras
+      hash: md5
+      md5: 07af4dd27b19a5cf8d4af407206e0fd0
+      size: 413589
+    - path: src/evaluate.py
+      hash: md5
+      md5: 975a03ea6ec0dc6c12a62e298812d6fc
+      size: 6571
+    outs:
+    - path: reports/figures/actual_vs_predicted.png
+      hash: md5
+      md5: 36161d6f3798ebe8202816de03de915e
+      size: 1007924

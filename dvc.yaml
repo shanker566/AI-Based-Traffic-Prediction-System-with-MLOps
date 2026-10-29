@@ -1,0 +1,29 @@
+stages:
+  prepare:
+    cmd: python src/data_preprocessing.py
+    deps:
+      - data/raw/traffic.csv
+      - src/data_preprocessing.py
+    outs:
+      - data/processed/processed_traffic.csv
+      - data/processed/traffic_sequences.npz
+      - models/feature_scaler.pkl
+      - models/target_scaler.pkl
+
+  train:
+    cmd: python src/train_lstm.py
+    deps:
+      - data/processed/traffic_sequences.npz
+      - src/train_lstm.py
+    outs:
+      - models/traffic_lstm.keras
+
+  evaluate:
+    cmd: python src/evaluate.py
+    deps:
+      - data/processed/traffic_sequences.npz
+      - models/traffic_lstm.keras
+      - models/target_scaler.pkl
+      - src/evaluate.py
+    outs:
+      - reports/figures/actual_vs_predicted.png

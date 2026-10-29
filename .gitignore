@@ -1,0 +1,40 @@
+# Python Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# MLflow Tracking artifacts
+mlruns/
+mlflow.db
+.trash/
+
+# Archive files
+*.zip
+*.tar.gz
+
+# DVC Local Cache and Temp
+.dvc/cache/
+.dvc/tmp/
+
+# Data Files tracked by DVC
+/data/raw/traffic.csv
+
+# Models (tracked or binary outputs)
+*.keras
+*.h5
+*.pkl
+
+# IDE & OS specific files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
