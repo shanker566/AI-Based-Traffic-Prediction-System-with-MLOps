@@ -138,14 +138,15 @@ An audit of `mlflow.db` and the saved model artifacts confirmed:
 
 ---
 
-## ⚡ Quickstart: Native Windows Setup
+## ⚡ Quickstart & Native Windows Execution
 
 ### 1. Prerequisites
-- Windows 10/11
-- Python 3.11 installed (available via `python --version`)
-- PowerShell
+- **Operating System**: Windows 10 or 11
+- **Python**: Version 3.11 (verify using `python --version`)
+- **Shell**: Windows PowerShell
 
-### 2. Environment Activation & Dependencies
+### 2. Environment Activation & Setup
+Open PowerShell and navigate to the project root:
 ```powershell
 # Navigate to project directory
 cd "c:\Users\gowri\OneDrive\Desktop\mlops project"
@@ -155,28 +156,99 @@ cd "c:\Users\gowri\OneDrive\Desktop\mlops project"
 
 # (Optional) Verify or install dependencies
 pip install -r requirements.txt
-```
 
-### 3. Environment Configuration
-Copy the template environment file:
-```powershell
+# (Optional) Configure environment variables
 Copy-Item .env.example .env
 ```
 
 ---
 
-## 🚀 Running the Services Locally
+## 🚦 How to Start the System (Step-by-Step)
 
-### Step 1 — Start the FastAPI Serving Backend
-In your primary terminal:
+To run the complete system, open **two separate PowerShell terminals** (one for the backend and one for the frontend UI):
+
+### Step 1: Start the FastAPI Backend (Terminal 1)
+In your first PowerShell window:
 ```powershell
-python -m uvicorn api.main:app --host 127.0.0.1 --port 8000
+cd "c:\Users\gowri\OneDrive\Desktop\mlops project"
+.\.venv\Scripts\Activate.ps1
+python -m uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
 ```
-- **API Base URL**: `http://127.0.0.1:8000`
-- **Interactive Swagger Documentation**: `http://127.0.0.1:8000/docs`
-- **ReDoc Schema Documentation**: `http://127.0.0.1:8000/redoc`
+- 🌐 **Backend URL**: [http://127.0.0.1:8000](http://127.0.0.1:8000)
+- 📑 **Interactive API Documentation (Swagger UI)**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- 📖 **ReDoc Documentation**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
 
-#### Available Endpoints
+> [!NOTE]
+> Keep Terminal 1 open and running! It loads the trained LSTM model and scalers into memory to serve inference requests.
+
+---
+
+### Step 2: Start the Streamlit Dashboard (Terminal 2)
+In your second PowerShell window:
+```powershell
+cd "c:\Users\gowri\OneDrive\Desktop\mlops project"
+.\.venv\Scripts\Activate.ps1
+streamlit run dashboard/app.py
+```
+- 🚦 **Dashboard URL**: [http://localhost:8501](http://localhost:8501)
+- The interactive UI will automatically launch in your default web browser.
+- **Key Features Available**:
+  - **Live Prediction Tab**: Choose between *Historical Evaluation* (with zero data leakage) or *Future Forecast* (recursive multi-step forecasting), select any junction (1–4), and click **Predict Traffic Volume**.
+  - **Baseline Evaluation Tab**: Inspect verified holdout metrics ($R^2$, MAE, RMSE) and evaluation charts.
+  - **Session History Tab**: View a log of all queries made during the session with single-click CSV download.
+  - **Model & Architecture Tab**: Inspect the neural network architecture and feature schemas.
+
+---
+
+## 🛠️ Additional MLOps Commands
+
+Run these commands in any PowerShell terminal with `.\.venv\Scripts\Activate.ps1` active:
+
+### A. Run Automated Pytest Suite
+```powershell
+python -m pytest -v
+```
+Executes all 19 unit & integration tests verifying API endpoints, input validation, chronological sequencing, drift monitoring, and retraining safety gates.
+
+### B. Generate Evidently AI Data Drift & Performance Report
+```powershell
+python monitoring/drift_report.py
+```
+- Interactive HTML Report: [`reports/evidently_drift_report.html`](reports/evidently_drift_report.html)
+- JSON Summary Metadata: [`reports/drift_summary.json`](reports/drift_summary.json)
+- Evaluates statistical distribution drift between reference training data ($N=33,684$) and holdout test data ($N=7,218$).
+
+### C. Run Safe Candidate Model Retraining
+```powershell
+python src/retrain.py --epochs 15 --batch-size 64 --tolerance 0.05
+# Alternative module syntax:
+python -m src.retrain --epochs 15 --batch-size 64 --tolerance 0.05
+```
+- Trains a candidate model separately to `models/candidate_traffic_lstm.keras`.
+- Evaluates candidate on holdout test set and compares against production baseline.
+- **Safety Gate**: Only promotes candidate if it passes non-NaN smoke test, achieves $R^2 \ge 0.85$, and candidate RMSE is within 5% of baseline.
+- Creates automatic backup `models/traffic_lstm_backup.keras` prior to promotion. Production model remains untouched if candidate fails.
+
+### D. Open MLflow Experiment Tracking UI
+```powershell
+python -m mlflow ui --port 5000
+```
+- Open browser at: [http://127.0.0.1:5000](http://127.0.0.1:5000)
+- View tracked runs, hyperparameters, loss curves, and model artifacts under experiment `traffic-prediction-lstm`.
+
+### E. Check or Reproduce DVC Pipeline
+```powershell
+# Check pipeline status (all stages up to date)
+dvc status
+
+# Reproduce pipeline stages (prepare -> train -> evaluate -> monitor)
+dvc repro
+```
+
+---
+
+## 🔌 API Endpoints Reference & Examples
+
 | HTTP Method | Endpoint | Description |
 | :---: | :--- | :--- |
 | `GET` | `/health` | Verifies model, scalers, and historical dataset status |
@@ -184,12 +256,13 @@ python -m uvicorn api.main:app --host 127.0.0.1 --port 8000
 | `GET` | `/junctions` | Returns record counts, date ranges, and volume statistics per junction |
 | `POST` | `/predict` | Generates hourly traffic predictions (historical, future, or custom sequence) |
 
-#### Prediction Payload Examples:
-**Historical Holdout Evaluation (Zero Leakage)**:
+#### Prediction Payload Examples (PowerShell)
+
+**1. Historical Holdout Evaluation (Zero Data Leakage)**:
 ```powershell
 Invoke-RestMethod -Uri "http://127.0.0.1:8000/predict" -Method Post -ContentType "application/json" -Body '{"target_timestamp": "2017-06-30 23:00:00", "junction": 1, "mode": "historical"}' | ConvertTo-Json
 ```
-*Output*:
+*Sample Response*:
 ```json
 {
   "target_timestamp": "2017-06-30 23:00:00",
@@ -204,69 +277,9 @@ Invoke-RestMethod -Uri "http://127.0.0.1:8000/predict" -Method Post -ContentType
 }
 ```
 
-**Future Recursive Forecast (Multi-Step)**:
+**2. Future Recursive Forecast (Multi-Step Rollout)**:
 ```powershell
 Invoke-RestMethod -Uri "http://127.0.0.1:8000/predict" -Method Post -ContentType "application/json" -Body '{"target_timestamp": "2017-07-01 06:00:00", "junction": 1, "mode": "future"}' | ConvertTo-Json
-```
-
----
-
-### Step 2 — Start the Streamlit Dashboard
-Open a second PowerShell terminal, activate `.venv`, and run:
-```powershell
-streamlit run dashboard/app.py
-```
-- The dashboard opens at: **`http://localhost:8501`**
-- It connects directly to the FastAPI service via `API_BASE_URL` (`http://127.0.0.1:8000`).
-- **Features**:
-  - **Live Prediction Tab**: Select junction (1–4), mode (Historical or Future Forecast), adjust target date/hour, and inspect predicted vs. actual traffic counts.
-  - **Baseline Evaluation Tab**: View verified holdout metrics and test horizon charts (`actual_vs_predicted.png`).
-  - **Session History Tab**: Track all queries executed during the session with single-click CSV export.
-  - **Model & Architecture Tab**: Inspect input feature ordering and the 2-layer LSTM network specifications.
-
----
-
-### Step 3 — Run Evidently AI Drift Monitoring
-```powershell
-python monitoring/drift_report.py
-```
-- Generates interactive HTML report: [`reports/evidently_drift_report.html`](reports/evidently_drift_report.html)
-- Generates JSON summary: [`reports/drift_summary.json`](reports/drift_summary.json)
-- Evaluates data distribution drift between the 70% training reference partition and the 15% holdout test partition, alongside performance evaluation.
-
----
-
-### Step 4 — Run Safe Candidate Model Retraining
-```powershell
-python src/retrain.py --epochs 15 --batch-size 64 --tolerance 0.05
-```
-- **Retraining Governance**:
-  1. Computes current production baseline metrics on the test set.
-  2. Trains a candidate model saved separately to `models/candidate_traffic_lstm.keras`.
-  3. Executes an inference sanity smoke test (checks non-NaN outputs).
-  4. Enforces promotion rules: Candidate must achieve $R^2 \ge 0.85$ and $\text{RMSE} \le \text{baseline} \times 1.05$.
-  5. If approved: Backs up the current production model to `models/traffic_lstm_backup.keras` and promotes the candidate.
-  6. If rejected: Preserves the production model and records rejection in MLflow.
-
----
-
-### Step 5 — Run MLflow Experiment Tracking UI
-```powershell
-python -m mlflow ui --port 5000
-```
-- Open browser at: **`http://127.0.0.1:5000`**
-- Inspect runs, hyperparameters, training loss curves, evaluation metrics, and candidate retraining runs under experiment **`traffic-prediction-lstm`**.
-
----
-
-### Step 6 — Run the DVC Pipeline
-To reproduce the 4-stage pipeline:
-```powershell
-dvc repro
-```
-To check stage dependencies and outputs:
-```powershell
-dvc status
 ```
 
 ---

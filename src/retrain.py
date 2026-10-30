@@ -1,4 +1,5 @@
 import os
+import sys
 import shutil
 import argparse
 import json
@@ -11,9 +12,14 @@ import tensorflow as tf
 import mlflow
 import mlflow.keras
 
-from src.train_lstm import build_lstm_model
-
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
+try:
+    from src.train_lstm import build_lstm_model
+except ModuleNotFoundError:
+    from train_lstm import build_lstm_model
 DATA_PATH = os.path.join(BASE_DIR, "data", "processed", "traffic_sequences.npz")
 PRODUCTION_MODEL_PATH = os.path.join(BASE_DIR, "models", "traffic_lstm.keras")
 CANDIDATE_MODEL_PATH = os.path.join(BASE_DIR, "models", "candidate_traffic_lstm.keras")

@@ -101,7 +101,7 @@ selected_mode = st.sidebar.radio(
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🎓 Project Details")
 st.sidebar.caption(
-    "**Course**: College MLOps Project (Phase 2)\n\n"
+    "**Course**: MLOps\n\n"
     "**Architecture**: Deep LSTM Network\n\n"
     "**Stack**: FastAPI, Streamlit, MLflow, DVC, Evidently AI (Native Python)"
 )
@@ -143,8 +143,17 @@ with tab_predict:
                 "retrieves the preceding 24-hour sequence, generates the prediction, and compares against "
                 "the actual ground-truth count without future data leakage."
             )
-            # Default to test partition date
-            selected_date = st.date_input("Target Date", value=datetime(2017, 6, 30).date())
+            # Enforce valid dataset bounds for selected junction
+            min_avail_date = datetime(2017, 1, 2).date() if selected_junction == 4 else datetime(2015, 11, 2).date()
+            max_avail_date = datetime(2017, 6, 30).date()
+
+            selected_date = st.date_input(
+                "Target Date",
+                value=datetime(2017, 6, 30).date(),
+                min_value=min_avail_date,
+                max_value=max_avail_date,
+                help=f"Dataset coverage for Junction {selected_junction}: {min_avail_date} to {max_avail_date}"
+            )
             selected_hour = st.slider("Target Hour of Day (00:00 - 23:00)", 0, 23, 18)
             target_dt_str = f"{selected_date} {selected_hour:02d}:00:00"
             mode_api_val = "historical"
