@@ -42,7 +42,7 @@ stages:
     outs:
     - path: models/traffic_lstm.keras
       hash: md5
-      md5: 07af4dd27b19a5cf8d4af407206e0fd0
+      md5: 9a1ff6ec4f6cac1353f1325b3a5333f4
       size: 413589
   evaluate:
     cmd: python src/evaluate.py
@@ -57,7 +57,7 @@ stages:
       size: 975
     - path: models/traffic_lstm.keras
       hash: md5
-      md5: 07af4dd27b19a5cf8d4af407206e0fd0
+      md5: 9a1ff6ec4f6cac1353f1325b3a5333f4
       size: 413589
     - path: src/evaluate.py
       hash: md5
@@ -66,5 +66,29 @@ stages:
     outs:
     - path: reports/figures/actual_vs_predicted.png
       hash: md5
-      md5: 36161d6f3798ebe8202816de03de915e
-      size: 1007924
+      md5: ff5971c609bd95394f2793e00b81b981
+      size: 988790
+  monitor:
+    cmd: python monitoring/drift_report.py
+    deps:
+    - path: data/processed/processed_traffic.csv
+      hash: md5
+      md5: 30ee3a31087d645d82a82bd28a29951c
+      size: 2369577
+    - path: models/traffic_lstm.keras
+      hash: md5
+      md5: 9a1ff6ec4f6cac1353f1325b3a5333f4
+      size: 413589
+    - path: monitoring/drift_report.py
+      hash: md5
+      md5: 766a4d124c9734f4503cabccf82c36c0
+      size: 6988
+    outs:
+    - path: reports/drift_summary.json
+      hash: md5
+      md5: 874b974d7cd6b7bfcf5038c5cc25fd05
+      size: 934
+    - path: reports/evidently_drift_report.html
+      hash: md5
+      md5: b923a665169beffa64dd8f0a56d54af7
+      size: 3934818

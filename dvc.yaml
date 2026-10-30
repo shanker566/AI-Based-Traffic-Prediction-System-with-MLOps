@@ -35,5 +35,7 @@ stages:
       - models/traffic_lstm.keras
       - monitoring/drift_report.py
     outs:
-      - reports/evidently_drift_report.html
-      - reports/drift_summary.json
+      - reports/evidently_drift_report.html:
+          cache: false
+      - reports/drift_summary.json:
+          cache: false
