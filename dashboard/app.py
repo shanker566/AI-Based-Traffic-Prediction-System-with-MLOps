@@ -59,7 +59,10 @@ st.markdown("""
 # -----------------------------------------------------------------------------
 # Configuration & Session State
 # -----------------------------------------------------------------------------
-DEFAULT_API_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
+DEFAULT_API_URL = os.getenv(
+    "API_BASE_URL",
+    "https://traffic-prediction-api-j1gr.onrender.com"
+)
 
 if "prediction_history" not in st.session_state:
     st.session_state.prediction_history = []

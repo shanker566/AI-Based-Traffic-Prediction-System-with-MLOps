@@ -172,7 +172,7 @@ In your first PowerShell window:
 ```powershell
 cd "c:\Users\gowri\OneDrive\Desktop\mlops project"
 .\.venv\Scripts\Activate.ps1
-python -m uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
+python -m uvicorn api.main:app --host 127.0.0.1 --port 8000
 ```
 - 🌐 **Backend URL**: [http://127.0.0.1:8000](http://127.0.0.1:8000)
 - 📑 **Interactive API Documentation (Swagger UI)**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
@@ -188,7 +188,7 @@ In your second PowerShell window:
 ```powershell
 cd "c:\Users\gowri\OneDrive\Desktop\mlops project"
 .\.venv\Scripts\Activate.ps1
-streamlit run dashboard/app.py
+python -m streamlit run dashboard/app.py
 ```
 - 🚦 **Dashboard URL**: [http://localhost:8501](http://localhost:8501)
 - The interactive UI will automatically launch in your default web browser.
