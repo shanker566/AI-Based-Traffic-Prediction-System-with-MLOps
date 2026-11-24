@@ -39,3 +39,9 @@ mlflow.db
 .DS_Store
 Thumbs.db
 *.log
+
+
+# Allow required traffic prediction model files on Render
+!/models/traffic_lstm.keras
+!/models/feature_scaler.pkl
+!/models/target_scaler.pkl
